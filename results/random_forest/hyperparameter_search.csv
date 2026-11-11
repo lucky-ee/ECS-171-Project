@@ -1,0 +1,3 @@
+dataset,best_cv_average_precision,best_params
+adult,0.8224534015811283,"{'n_estimators': 500, 'min_samples_split': 10, 'min_samples_leaf': 4, 'max_features': 0.5, 'max_depth': 16, 'class_weight': 'balanced_subsample'}"
+ai4i,0.7617597207262674,"{'n_estimators': 500, 'min_samples_split': 5, 'min_samples_leaf': 2, 'max_features': 0.5, 'max_depth': 24, 'class_weight': 'balanced_subsample'}"
