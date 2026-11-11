@@ -96,6 +96,68 @@ def plot(runs, out=RESULTS / "comparison_ap.png"):
     print(f"Saved {out}")
 
 
+METRIC_NAMES = {"accuracy": "Accuracy", "precision": "Precision", "recall": "Recall",
+                "f1": "F1", "average_precision": "Average\nprecision"}
+# Share of positives in each dataset: what "always predict the majority class" scores.
+# Accuracy of that do-nothing model = 1 - rate; average precision of a random ranking = rate.
+POSITIVE_RATE = {"adult": 0.239, "ai4i": 0.034}
+
+
+def plot_metrics(runs, corruption_type="clean", missing_rate=0.0,
+                 out=RESULTS / "metrics_by_model.png"):
+    """Grouped bars: every metric for every model, one panel per dataset.
+    Defaults to the clean (final) models; pass e.g. corruption_type="mcar", missing_rate=0.4
+    to compare the models trained on 40% randomly missing data instead."""
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    sel = runs[(runs.corruption_type == corruption_type) & (runs.missing_rate == missing_rate)]
+    stats = sel.groupby(["dataset", "model"])[METRICS].agg(["mean", "std"])
+    models = [m for m in ["xgboost", "random_forest", "neural_network", "logistic_regression"]
+              if m in sel.model.unique()]
+
+    fig, axes = plt.subplots(1, len(DATASETS), figsize=(16, 5.5), sharey=True)
+    x = np.arange(len(METRICS))
+    width = 0.8 / len(models)
+    for ax, (ds, ds_name) in zip(axes, DATASETS):
+        for i, model in enumerate(models):
+            if (ds, model) not in stats.index:
+                continue
+            row = stats.loc[(ds, model)]
+            means = [row[(m, "mean")] for m in METRICS]
+            stds = [0 if np.isnan(row[(m, "std")]) else row[(m, "std")] for m in METRICS]
+            pos = x - 0.4 + width * (i + 0.5)
+            s = STYLES[model]
+            ax.bar(pos, means, width * 0.92, yerr=stds, color=s["color"], label=s["label"],
+                   error_kw=dict(ecolor="#555555", lw=1, capsize=2))
+            for p, v, sd in zip(pos, means, stds):   # label sits above the error bar
+                ax.text(p, v + sd + 0.012, f"{v:.2f}", ha="center", va="bottom", fontsize=8, color="#333333")
+        # reference lines: what a model that learned nothing would score
+        rate = POSITIVE_RATE[ds]
+        for metric, value in [("accuracy", 1 - rate), ("average_precision", rate)]:
+            j = METRICS.index(metric)
+            ax.hlines(value, j - 0.45, j + 0.45, colors="#333333", linestyles="--", lw=1.4,
+                      label="Model that learned nothing" if metric == "accuracy" else None)
+        ax.set_xticks(x)
+        ax.set_xticklabels([METRIC_NAMES[m] for m in METRICS])
+        ax.set_ylim(0, 1.08)
+        ax.set_title(ds_name, fontsize=13, loc="left")
+        ax.grid(axis="y", color="#e4e4e0", lw=1)
+        ax.set_axisbelow(True)
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+    axes[0].set_ylabel("Test score (mean of 3 runs, bars = ±1 std)")
+    condition = "clean data" if corruption_type == "clean" else f"{missing_rate:.0%} {corruption_type}"
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=len(labels), frameon=False, fontsize=11)
+    fig.text(0.5, 0.005, f"Models trained on {condition}; scored on the same untouched test set. "
+             "Precision, recall and F1 use each model's best-F1 threshold from validation.",
+             ha="center", fontsize=9, color="#555555")
+    fig.tight_layout(rect=(0, 0.03, 1, 0.92))
+    fig.savefig(out, dpi=200)
+    print(f"Saved {out}")
+
+
 if __name__ == "__main__":
     runs = load_all()
     runs.to_csv(RESULTS / "all_test_results.csv", index=False)
@@ -105,6 +167,7 @@ if __name__ == "__main__":
     ap.to_csv(RESULTS / "comparison_ap.csv")
 
     plot(runs)
+    plot_metrics(runs)
 
     pd.set_option("display.width", 200)
     print(ap.to_string())

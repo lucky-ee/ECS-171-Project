@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import make_pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder, FunctionTransformer
 
 
 def clean_column_names(df):
@@ -123,28 +123,51 @@ def split(X, y, seed=42):
 
 
 # Preprocessing
+# Skewed columns the EDA says to log-transform (only models using mode="impute": logistic regression, neural network)
+LOG_COLUMNS = ["capital_gain", "capital_loss", "Rotational_speed"]
+
+
+def _safe_log1p(x):
+    # measurement noise can push values below 0, and log1p of a value below -1 is NaN
+    return np.log1p(np.clip(x, 0, None))
+
+
 def make_preprocessor(X_train, mode):
     numeric_cols, categorical_cols = feature_types(X_train)
 
     if mode == "impute":
-        numeric_steps = make_pipeline(SimpleImputer(strategy="median"),
-                                      StandardScaler())
-        categorical_steps = make_pipeline(SimpleImputer(strategy="most_frequent"),
-                                          OneHotEncoder(handle_unknown="ignore"))
+        # logistic regression and neural network: fill in, log-transform skewed columns,
+        # scale, one-hot encode; "was missing" indicators keep the missingness signal (EDA)
+        log_cols = [c for c in numeric_cols if c in LOG_COLUMNS]
+        other_cols = [c for c in numeric_cols if c not in LOG_COLUMNS]
+        return ColumnTransformer([
+            ("log", make_pipeline(FunctionTransformer(_safe_log1p, feature_names_out="one-to-one"),
+                                  SimpleImputer(strategy="median", add_indicator=True), StandardScaler()), log_cols),
+            ("numeric", make_pipeline(SimpleImputer(strategy="median", add_indicator=True), StandardScaler()), other_cols),
+            ("categorical", make_pipeline(SimpleImputer(strategy="constant", fill_value="Missing"),
+                                          OneHotEncoder(handle_unknown="ignore")), categorical_cols),
+        ])
     elif mode == "native":
-        numeric_steps = "passthrough"   # leave numeric columns unchanged
+        # XGBoost: leave missing values as NaN so it uses its learned default directions
+        numeric_steps = "passthrough"
         categorical_steps = OrdinalEncoder(handle_unknown="use_encoded_value",
                                            unknown_value=np.nan,
                                            encoded_missing_value=np.nan)
+    elif mode == "impute_ordinal":
+        # XGBoost, blanks filled in first: same ordinal encoding as "native",
+        # so filling in the blanks is the only difference
+        numeric_steps = SimpleImputer(strategy="median")
+        categorical_steps = make_pipeline(SimpleImputer(strategy="most_frequent"),
+                                          OrdinalEncoder(handle_unknown="use_encoded_value",
+                                                         unknown_value=np.nan))
     else:
-        raise ValueError("mode must be 'impute' or 'native'")
+        raise ValueError("mode must be 'impute', 'native' or 'impute_ordinal'")
 
     # ColumnTransformer applies different steps to different columns
-    preprocessor = ColumnTransformer([
+    return ColumnTransformer([
         ("numeric", numeric_steps, numeric_cols),
         ("categorical", categorical_steps, categorical_cols),
     ])
-    return preprocessor
 
 
 if __name__ == "__main__":
