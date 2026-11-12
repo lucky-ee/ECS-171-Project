@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ECS 171 Live Demo AI4I</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <header><h1>ECS 171 Live Demo AI4I</h1></header>
+  <main>
+    <!-- switch training conditions while keeping the demo inputs the same -->
+    <section class="panel experiment" aria-labelledby="experiment-heading">
+      <div class="experiment-heading"><h2 id="experiment-heading">Choose a trained model</h2></div>
+      <div class="model-controls">
+      <div class="model-tabs" role="tablist" aria-label="Training missingness">
+        {% for rate in rates %}
+        <button type="button" role="tab" id="model-tab-{{ rate }}" data-rate="{{ rate }}" aria-controls="experiment-results" aria-selected="{{ 'true' if rate == 0 else 'false' }}" tabindex="{{ '0' if rate == 0 else '-1' }}">{{ 'Clean training' if rate == 0 else '%s%% missing'|format(rate) }}</button>
+        {% endfor %}
+      </div>
+      <div class="experiment-controls">
+        <label for="handling-select">Missing-value handling <select id="handling-select" disabled><option value="mcar">Native XGBoost</option><option value="mcar_imputed">Imputation</option></select></label>
+        <label for="seed-select">Training seed <select id="seed-select" disabled>{% for seed in seeds %}<option>{{ seed }}</option>{% endfor %}</select></label>
+      </div>
+      </div>
+      <div id="experiment-results" role="tabpanel" aria-labelledby="model-tab-0">
+        <table class="metrics-table" aria-label="Saved performance on the clean test set">
+          <thead><tr><th scope="col">Training condition</th><th scope="col">Average precision</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">Failure F1</th><th scope="col">Accuracy</th></tr></thead>
+          <tbody><tr id="clean-metrics"></tr><tr id="selected-metrics" class="selected-metrics"></tr><tr id="percentage-change" class="percentage-change"></tr></tbody>
+        </table>
+        <div class="experiment-footer"><p id="model-description">Loading saved model…</p></div>
+      </div>
+    </section>
+    <!-- input form on the left -->
+    <section class="panel inputs" aria-labelledby="inputs-heading">
+      <h2 id="inputs-heading">Machine inputs</h2>
+      <form id="prediction-form">
+      <!-- use fields and default values from flask -->
+      {% for field in fields %}
+        <div class="field">
+          <label for="{{ field.name }}">{{ field.label }}</label>
+          <div class="input-row">
+          {% if field.name == 'Type' %}
+            <select id="{{ field.name }}" name="{{ field.name }}" required>
+              {% for category in ['H','L','M'] %}<option {% if category == field.default %}selected{% endif %}>{{ category }}</option>{% endfor %}
+            </select>
+          {% else %}
+            <input id="{{ field.name }}" name="{{ field.name }}" type="number" step="any" min="{{ '0.000001' if 'temperature' in field.name else '0' }}" max="3.4028234663852886e38" value="{{ field.default }}" required>
+          {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+        <div class="buttons"><button id="predict" type="submit">Predict</button><button type="reset" class="secondary">Reset</button></div>
+      </form>
+      <p id="status" role="status" aria-live="polite">Loading the default example…</p>
+      <p id="error" role="alert" hidden></p>
+      <!-- compare trained models on the same complete inputs -->
+      <section class="prediction-section" id="results-panel" aria-labelledby="results-heading">
+        <h2 id="results-heading">Model-estimated failure probability</h2>
+        <div class="results" id="results" aria-live="polite">
+          <article><h3 id="baseline-model-label">Clean-trained model</h3><strong id="baseline-probability">—</strong><span id="baseline-class">—</span><p class="note" id="baseline-threshold"></p></article>
+          <article class="selected-result"><h3 id="selected-model-label">Selected model</h3><strong id="selected-probability">—</strong><span id="selected-class">—</span><p class="note" id="selected-threshold"></p></article>
+        </div>
+        <p id="difference">—</p>
+      </section>
+    </section>
+      <!-- give the tree the full right column -->
+      <section class="panel tree-panel" id="tree-panel" aria-labelledby="tree-heading">
+        <div class="tree-heading"><h2 id="tree-heading">XGBoost Tree</h2><label for="tree-select">Tree <select id="tree-select">{% for i in range(tree_count) %}<option value="{{ i }}">{{ i + 1 }} of {{ tree_count }}</option>{% endfor %}</select></label></div>
+        <div class="tree-tools"><div class="zoom-control">
+          <label for="zoom">Zoom</label>
+          <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+          <input id="zoom" type="range" min="25" max="125" value="50" step="5">
+          <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+          <output id="zoom-value" for="zoom">50%</output>
+        </div></div>
+        <div id="tree-container" tabindex="0" aria-label="Scrollable decision tree">
+          <svg id="tree" role="img" aria-label="Decision tree with the selected route highlighted"></svg>
+        </div>
+      </section>
+    <!-- keep the route below both the inputs and tree -->
+    <section class="panel route-details" id="route-panel" aria-labelledby="route-heading" aria-live="polite">
+      <h3 id="route-heading">Selected route <span id="leaf-summary"></span></h3>
+      <ol id="decisions"></ol>
+    </section>
+  </main>
+  <script id="models-data" type="application/json">{{ models|tojson }}</script>
+</body>
+</html>

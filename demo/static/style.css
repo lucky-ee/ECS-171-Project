@@ -1,0 +1,174 @@
+/* page colors and viewport layout */
+:root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #172d39; background: #edf2f4; font-size: 15px; }
+* { box-sizing: border-box; }
+html { height: 100%; overflow: hidden; }
+body { margin: 0; height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+header { padding: 10px 20px; background: #133443; color: white; border-bottom: 3px solid #43b9a2; }
+h1 { font-size: clamp(20px, 2vw, 28px); margin: 3px 0; line-height: 1.15; }
+h2 { font-size: 16px; margin: 0 0 8px; line-height: 1.2; }
+h3 { font-size: 13px; margin: 0 0 6px; }
+p { line-height: 1.35; font-size: 13px; margin: 6px 0 10px; }
+[hidden] { display: none !important; }
+/* inputs and predictions on the left, tree on the right, route underneath */
+main { display: grid; grid-template-columns: clamp(280px, 23vw, 350px) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "experiment experiment" "inputs tree" "route route"; gap: 12px; width: 100%; max-width: 2000px; min-height: 0; padding: 12px; margin: 0 auto; }
+.panel { background: white; border: 1px solid #d4dfe3; border-radius: 10px; padding: 12px; min-width: 0; min-height: 0; }
+/* model tabs and clean test scores */
+.experiment { grid-area: experiment; }
+.inputs { grid-area: inputs; }
+.experiment-heading { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; }
+.experiment-heading h2, .experiment-heading p { margin: 0; }
+.experiment-heading p { font-size: 12px; color: #526671; }
+.model-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 8px 0; }
+.model-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.model-tabs button { background: #f0f4f6; color: #254652; border-color: #afc2cb; white-space: nowrap; padding: 7px 12px; font-size: 13px; }
+.model-tabs button[aria-selected=true] { background: #176e62; color: white; border-color: #176e62; }
+.experiment-controls { display: flex; gap: 16px; flex-wrap: wrap; }
+.experiment-controls label { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+.experiment-controls select { font-size: 12px; padding: 5px; }
+.experiment-controls select:disabled { background: #edf2f4; color: #536873; }
+.metrics-table { border-collapse: collapse; table-layout: fixed; width: 100%; font-size: 12px; text-align: left; }
+.metrics-table th, .metrics-table td { padding: 7px 10px; border-bottom: 1px solid #d4dfe3; overflow-wrap: anywhere; }
+.metrics-table th:first-child { width: 30%; }
+.metrics-table thead { background: #f0f4f6; }
+.metrics-table .selected-metrics { background: #e9f6f1; }
+.metrics-table .percentage-change { background: #f4f7f8; font-weight: 650; }
+.experiment-footer { display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; margin-top: 5px; }
+.experiment-footer p { font-size: 12px; margin: 0; }
+/* complete demo inputs */
+.inputs > p { font-size: 12px; }
+#prediction-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+.field { min-width: 0; }
+.field > label { display: block; font-weight: 650; font-size: 12px; margin-bottom: 5px; line-height: 1.3; }
+input[type=number], select { padding: 7px 8px; border: 1px solid #9eafb8; border-radius: 5px; font: inherit; background: white; color: inherit; min-width: 0; }
+.input-row > input, .input-row > select { width: 100%; }
+.buttons { grid-column: 1 / -1; display: flex; gap: 10px; margin-top: 2px; }
+button { font: inherit; font-weight: 650; background: #176e62; color: white; padding: 8px 18px; border: 1px solid #176e62; border-radius: 5px; cursor: pointer; }
+button.secondary { background: white; color: #254652; border-color: #a9bbc2; }
+button:disabled { opacity: .6; cursor: wait; }
+:focus-visible { outline: 3px solid #2979b9; outline-offset: 2px; }
+.note { color: #526671; font-size: 11px; margin: 5px 0 0; line-height: 1.3; }
+#status { color: #37665c; font-size: 12px; margin-bottom: 0; }
+#error { color: #a12323; background: #fff0ef; font-size: 12px; padding: 6px; border-radius: 5px; margin-bottom: 0; }
+/* ensemble predictions on the same example */
+.prediction-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid #d4dfe3; }
+.results { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.results article { padding: 8px 12px; background: #f0f4f6; border: 1px solid #d6e2e7; border-radius: 7px; min-width: 0; }
+.results .selected-result { background: #e9f6f1; border-color: #8cbfb1; }
+.results h3 { font-size: 12px; margin-bottom: 2px; }
+.results strong { display: block; font-size: 28px; line-height: 1.15; letter-spacing: -.03em; margin: 2px 0; }
+.results span { font-weight: 650; font-size: 12px; }
+.results .note { font-size: 10px; margin-top: 2px; }
+#difference { font-size: 12px; margin: 5px 0 0; }
+/* only the tree area scrolls */
+.tree-panel { grid-area: tree; display: flex; flex-direction: column; overflow: hidden; }
+.tree-heading { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.tree-heading h2 { margin: 0; }
+.tree-heading label { font-size: 12px; }
+.tree-heading select { font-size: 12px; padding: 4px; }
+.tree-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 11px; margin-top: 5px; }
+.zoom-control { display: flex; align-items: center; gap: 8px; }
+.zoom-control button { width: 28px; height: 26px; padding: 0; font-size: 20px; line-height: 1; background: white; color: #254652; border-color: #9eafb8; }
+.zoom-control button:disabled { opacity: .4; cursor: default; }
+#zoom { width: 85px; }
+#tree-container { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; background: #f8fafb; border: 1px solid #d4dfe3; border-radius: 7px; margin-top: 6px; }
+#tree { display: block; max-width: none; }
+.edge { fill: none; stroke: #b9c5ca; stroke-width: 2; }
+.edge.active { stroke: #177467; stroke-width: 4; }
+.edge.missing { stroke: #b65c13; stroke-dasharray: 8 5; }
+.edge-label { font-size: 12px; fill: #42555f; paint-order: stroke; stroke: #f8fafb; stroke-width: 4px; stroke-linejoin: round; }
+.node rect { fill: white; stroke: #b8c7ce; stroke-width: 1.5; }
+.node.active rect { fill: #e5f5ee; stroke: #177467; stroke-width: 3; }
+.node text { fill: #183b48; font-size: 13px; }
+.node .node-id { fill: #627580; font-size: 11px; }
+.route-details { grid-area: route; }
+.route-details h3 { margin-bottom: 4px; }
+#leaf-summary { font-size: 12px; font-weight: 500; color: #526671; }
+#decisions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 30px; padding-left: 22px; margin: 4px 0 0; }
+#decisions li { padding: 0; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+#decisions li.missing { color: #9a4c0c; font-weight: 650; }
+/* keep the controls compact on laptop screens */
+@media (max-height: 760px) {
+  header { padding: 8px 16px; }
+  h1 { font-size: 23px; }
+  main { gap: 10px; padding: 10px; }
+  .panel { padding: 10px; }
+  .model-controls { margin: 6px 0; }
+  .metrics-table th, .metrics-table td { padding: 5px 8px; }
+  #prediction-form { gap: 10px 8px; }
+  .results strong { font-size: 25px; }
+}
+@media (max-width: 1050px) {
+  main { grid-template-columns: 280px minmax(0, 1fr); }
+  .experiment-heading p { font-size: 11px; }
+  .model-controls { gap: 8px; }
+  .model-tabs button { font-size: 12px; padding: 6px 9px; }
+  .experiment-controls { gap: 10px; }
+  .experiment-controls label { font-size: 11px; }
+  .metrics-table { font-size: 11px; }
+}
+@media (max-width: 800px) {
+  main { grid-template-columns: 240px minmax(0, 1fr); }
+  #decisions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .experiment-heading p { display: none; }
+  .model-controls { gap: 6px; }
+  .experiment-controls { width: 100%; justify-content: space-between; }
+  .metrics-table th:first-child { width: 28%; }
+  .metrics-table th, .metrics-table td { padding: 5px; }
+  #prediction-form { gap: 6px; }
+  .field > label { font-size: 11px; margin-bottom: 3px; }
+  .input-row > input, .input-row > select { padding: 4px 6px; font-size: 12px; }
+  .results article { padding: 6px; }
+  .results h3 { font-size: 11px; }
+  .results strong { font-size: 23px; }
+}
+@media (max-height: 600px) {
+  :root { font-size: 13px; }
+  header h1 { font-size: 20px; }
+  main { gap: 8px; padding: 8px; }
+  .panel { padding: 8px; }
+  .model-controls { margin: 4px 0; }
+  .metrics-table th, .metrics-table td { padding: 4px 6px; }
+  #prediction-form { gap: 7px; }
+  .field > label { margin-bottom: 3px; }
+  input[type=number], select { padding: 5px 6px; }
+  .results article { padding: 6px 10px; }
+  .results strong { font-size: 23px; }
+  .route-details { padding: 8px; }
+  #decisions { gap: 3px 26px; }
+  #decisions li { font-size: 11px; }
+}
+/* use more readable text when there is extra screen height */
+@media (min-height: 900px) and (min-width: 1051px) {
+  :root { font-size: 16px; }
+  main { padding: 16px; gap: 16px; }
+  .panel { padding: 16px; }
+  h2 { font-size: 18px; }
+  .metrics-table { font-size: 14px; }
+  .metrics-table th, .metrics-table td { padding: 9px 12px; }
+  .field > label, .inputs > p { font-size: 14px; }
+  .results h3, .results span { font-size: 14px; }
+  .results strong { font-size: 34px; }
+  .note, .tree-tools, .experiment-footer p { font-size: 12px; }
+}
+/* keep the stacked prediction cards compact beside the larger tree */
+.inputs #prediction-form { gap: 7px 8px; }
+.inputs .field > label { font-size: 12px; margin-bottom: 3px; }
+.inputs input[type=number], .inputs select { font-size: 13px; padding: 5px 7px; }
+.inputs .buttons button { font-size: 13px; padding: 6px 14px; }
+.prediction-section h2 { font-size: 14px; margin-bottom: 6px; }
+.inputs .results article { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; padding: 6px 10px; }
+.inputs .results h3 { grid-column: 1 / -1; font-size: 12px; margin-bottom: 2px; }
+.inputs .results strong { grid-column: 1; grid-row: 2 / 4; font-size: 26px; margin: 0; align-self: center; }
+.inputs .results span { grid-column: 2; grid-row: 2; text-align: right; font-size: 12px; }
+.inputs .results .note { grid-column: 2; grid-row: 3; text-align: right; font-size: 10px; margin: 0; }
+.inputs #difference { font-size: 11px; }
+@media (max-height: 820px) {
+  .inputs .field > label { font-size: 11px; margin-bottom: 2px; }
+  .inputs input[type=number], .inputs select { padding: 4px 6px; font-size: 12px; }
+  .inputs #prediction-form { gap: 5px 8px; }
+  .inputs .buttons button { padding: 5px 12px; font-size: 12px; }
+  .prediction-section { margin-top: 7px; padding-top: 7px; }
+  .inputs .results article { padding: 5px 8px; }
+  .inputs .results h3, .inputs .results span { font-size: 11px; }
+  .inputs .results strong { font-size: 23px; }
+}
